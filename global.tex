@@ -113,13 +113,40 @@ avec :
 \end{itemize}
 \end{frame}
 
+\begin{frame}{BRDF : Bi-directional Reflectance Distribution Function}
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item Rapport entre la radiance dans la direction sortante et le flux de radiance dans la direction entrante 
+                \item C'est une distribution 
+                \item Unité : sr$^{-1}$
+                \item Deux cas particuliers 
+                \begin{itemize}
+                    \item Réflecteur diffus idéal : distribution uniforme
+                    \item Réflecteur spéculaire idéal : distribution de Dirac
+                \end{itemize}
+                \item En pratique, la BRDF dépend de la longueur d'ondes
+            \end{itemize}                 
+        \end{column}
+        \begin{column}{.39\textwidth}
+            \begin{center}
+                \includegraphics[width=\columnwidth]{figs/BiRT.png}
+            \end{center}
+        \end{column}
+    \end{columns}
+ \end{frame}
+
 \begin{frame}{Equation de l'éclairage : solutions}
 \begin{block}{Problème}
     Solution analytique générale impossible !
 \end{block}
 \begin{itemize}
     \item 2 grandes familles de solutions approchées
-    \item Version (très) simplifiée
+    \item Version (très) simplifiée : l'énergie lumineuse réémise par une facette est proportionnelle  à
+    \begin{itemize}
+        \item l'énergie reçue par les sources de lumière 
+        \item \textcolor{blue}{l'énergie reçue par d'autres facettes : prise en compte des inter-réflexions}
+    \end{itemize}
     \item Radiosité 
     \begin{itemize}
         \item tous les objets sont diffus 
@@ -195,4 +222,153 @@ avec :
     \begin{center}
         \animategraphics[loop,controls,width=.5\linewidth]{10}{figs/rt-refraction/}{0}{8}
     \end{center}
+\end{frame}
+
+\begin{frame}{Loi de Snell-Descartes}
+    \begin{center}
+        \includegraphics[width=.5\textwidth]{figs/descartes.png}
+        \includegraphics[width=.4\textwidth]{figs/descartes-2.png}
+    \end{center}
+    $$
+        n_i \sin \theta_i = n_t \sin \theta_t
+    $$
+\end{frame}
+
+\begin{frame}{Jusqu'où ?}
+    \begin{center}
+        \includegraphics[width=.3\textwidth]{figs/recur-1.png}
+        \includegraphics[width=.3\textwidth]{figs/recur-2.png}
+        \includegraphics[width=.3\textwidth]{figs/recur-3.png}
+    \end{center}
+    Complexité exponentielle
+\end{frame}
+
+\begin{frame}{Algorithme du lancer de rayons 1/2}
+    \begin{algorithmic}[1]
+        \For{$u \in [0,...,w]$}
+            \For{$v \in [0,...,h]$}
+                \State ray = calculateRay(u,v,cam\_params)
+                \State color[u][v] = ray\_trace(ray,0)
+            \EndFor
+        \EndFor
+     \end{algorithmic}
+\end{frame}
+
+\begin{frame}{Algorithme du lancer de rayons 2/2}
+            \begin{algorithmic}[1]
+      \Function{ray\_trace}{$r$ : Ray,$depth$ : int}
+                \If{depth > MAX\_DEPTH} 
+                    \State return background\_color 
+                \EndIf
+                \State hits = findClosestIntersection(r)
+                \If{hits == 0} 
+                    \State return background\_color 
+                \EndIf
+                \State $c_l$ = calculateLocalColor($r$)
+                \State refl = calculateReflection($r$)
+                \State $c_r$ = raytrace(refl,depth+1)
+                \State tran = calculateRefraction($r$)
+                \State $c_t$ = raytrace(tran,depth+1)
+                \State return $c_l + c_r + c_t$
+       \EndFunction 
+             \end{algorithmic}
+\end{frame}
+
+\begin{frame}{Avantages}
+    \begin{itemize}
+        \item Elimination des parties cachées incluses dans l'algorithme 
+        \item Ombres portées incluses 
+        \begin{itemize}
+            \item correctes du point de vue géométriques 
+        \end{itemize}
+        \item Réflexions entre les objets 
+        \item Qualité d'image 
+        \item Quelques effets possibles 
+        \begin{itemize}
+            \item Milieux participants (fumée, brouillard)
+            \item Mirages 
+            \item Bleu atmosphérique 
+            \item Effets photographiques (profondeur de champ, déformations de l'objectif)
+        \end{itemize}
+    \end{itemize}
+    
+\end{frame}
+
+\begin{frame}{Inconvénients}
+    \begin{itemize}
+        \item \textbf{Le temps de calcul !}
+        \begin{itemize}
+            \item les intersections entre primitives sont les opérations les plus fréquentes
+        \end{itemize}
+        \item L'aliassage 
+        \item Le bilan énergétique incorrect 
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Accélération du lancer de rayons}
+    \begin{itemize}
+        \item L'algorithme est massivement parallélisable : le calcul de la couleur des  pixels de l'image sont indépendants les uns des autres 
+        \item Les calculs d'intersection peuvent être largement optimisés 
+        \begin{itemize}
+            \item Boites englobantes 
+            \item Partitionnement de l'espace 
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Volumes englobants}
+    \begin{itemize}
+        \item Boite englobantes : parallépipède rectangle (aligné sur les axes ou non)
+        \item On teste l'intersection avec la BE avant de tester l'intersection avec l'objet 
+        \begin{itemize}
+            \item Un test rapide peut en économiser un plus long
+        \end{itemize}
+        \item On peut utiliser d'autres formes de boites englobantes (sphères notamment) tant que les calculs d'intersection avec une demi-droite sont faciles 
+        \item Les boites englobantes peuvent être utilisées aussi de façon hiérarchiques
+        \begin{itemize}
+            \item Test récursif d'intersection à partir de la BE \emph{racine}
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Illustrations}
+    \begin{center}
+        \includegraphics[width=.49\textwidth]{figs/bb-1.png}
+        \includegraphics[width=.49\textwidth]{figs/bb-2.pdf}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Partitionnement de l'espace}
+    \begin{itemize}
+        \item Grille uniforme 
+        \begin{itemize}
+            \item Construction d'une grille 3D 
+            \item Les objets sont placés dans les cellules de la grille qu'ils touchent 
+            \item Intersection rayon avec chacun des objets de chacune des cellules traversées 
+        \end{itemize}
+        \item Organisation hiérarchique de grilles 
+        \begin{itemize}
+            \item kd-tree, octree, bsp-tree
+        \end{itemize} 
+    \end{itemize}
+    \begin{center}
+        \includegraphics[width=.8\textwidth]{figs/trees.pdf}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Comparatif}
+    \begin{itemize}
+        \item Hiérarchie de boîtes englobantes 
+        \begin{itemize}
+            \item construction longue, requêtes rapides 
+        \end{itemize}
+        \item Grille uniforme 
+        \begin{itemize}
+            \item construction rapide, requêtes rapides ... si on est à la bonne résolution
+        \end{itemize}
+        \item Octrees, BSP-trees
+        \begin{itemize}
+            \item très simple, construction rapide, requêtes plus longues
+        \end{itemize}
+    \end{itemize}
 \end{frame}
