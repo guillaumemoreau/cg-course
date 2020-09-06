@@ -372,3 +372,189 @@ avec :
         \end{itemize}
     \end{itemize}
 \end{frame}
+
+\subsection{Méthodes de radiosité}
+
+\begin{frame}{Méthodes de radiosité}
+    \begin{itemize}
+        \item Idées 
+        \begin{itemize}
+            \item Matériaux purement diffus 
+            \item Prendre en compte \textbf{toutes} les inter-réflexions
+        \end{itemize}
+        \item Radiance et BRDF sont indépendantes de la direction
+        \item Simplification de l'équation de l'éclairage 
+    \end{itemize} 
+\end{frame}
+
+
+\begin{frame}{L'équation de la radiosité}
+    \begin{itemize}
+        \item C'est une discrétisation de l'équation de l'éclairage, indépendante du point de vue
+        \item Environnement échantillonné sous la forme de petits éléments de surfaces (les \emph{patches}), de taille finie, émettant et réfléchissant la lumière de façon uniforme sur leur surface 
+    \end{itemize}
+    \begin{center}
+    \includegraphics[width=0.6\textwidth]{figs/patches.pdf}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Simplification et discrétisation}
+    $$
+    L(x,d) = E(x,d) + \int \rho(x,d,d')v(x,x')L(x',d')G(x,x')  \,\mathrm{d}A 
+    $$
+
+    \begin{itemize}
+        \item Forme simplifiée 
+    \end{itemize}
+
+    $$
+    B(x) = E(x) + \rho_x \int B(x') v(x,x') G(x,x') \,\mathrm{d}A 
+    $$
+
+    \begin{itemize}
+        \item $v(x,x') G(x,x')$ : facteur de forme 
+        \item Discrétisation 
+    \end{itemize}
+
+    $$
+    B_i = E_i + \rho_i \Sigma_j F_{ji} B_j A_j/A_i
+    $$
+
+\end{frame}
+
+\begin{frame}{Equation de la radiosité}
+    $$
+    B_i = E_i + \rho_i \Sigma_j F_{ji} B_j A_j/A_i
+    $$
+
+    \begin{itemize}
+        \item $B_i$ : radiosité (constante) du i-ème élément de surface
+        \item $E_i$ : puissance lumineuse émise par le i-ème élément de surface
+        \item $A_i$ : aire du patch $i$
+        \item $F_{ji}$ = facteur de forme qui caractérise la proportion d'énergie quittant le patch $j$ qui arrive sur le patch $i$
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Version matricielle}
+    $$
+    \begin{pmatrix}
+        B_0 \\ \\ B_n
+    \end{pmatrix}
+    = 
+    \begin{pmatrix}
+        E_0 \\ \\ E_n
+    \end{pmatrix}
+    +
+    \begin{pmatrix}
+        \rho_i F_{ji}       
+    \end{pmatrix}
+    \begin{pmatrix}
+        B_0 \\ \\ B_n
+    \end{pmatrix}
+    \Longleftrightarrow
+    \boldsymbol{B} = \boldsymbol{E} + \boldsymbol{MB}
+$$
+\begin{itemize}
+    \item Système linéaire matriciel 
+    \item Résolution itérative (par longueur d'onde)
+    \item Stockage de l'équation : un problème en soi 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Facteurs de forme}
+
+    \begin{columns}
+        \begin{column}{.4\textwidth}
+            \includegraphics[width=\columnwidth]{figs/ff.png}
+        \end{column}
+        \begin{column}{.6\textwidth}
+            $$
+            F_{ij} = \int_{A_i} \int_{A_j} v(x,x') \frac{\cos \theta \cos \theta'}{\pi r^2} dx dx'
+        $$
+        
+        \begin{itemize}
+            \item Problème : pas de solution analytique 
+            \item Solution : projection sur une hémisphère ou un hémicube 
+        \end{itemize}
+                    
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Pipeline}
+    \begin{center}
+        \includegraphics[width=.4\textwidth]{figs/radiosity-pipeline.png}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Intérêt}
+    \begin{center}
+        \includegraphics[width=\textwidth]{figs/radiosity-pipeline-2.png}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Résolution itérative illustrée}
+    \begin{center}
+        \includegraphics[width=.9\textwidth]{figs/radiosity-iteration.pdf}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Radiosité : avantages}
+    \begin{itemize}
+        \item Calcul indépendant du point de vue
+        \begin{itemize}
+            \item Déplacement interactif (si pas d'impact sur l'environnement)
+        \end{itemize}
+        \item Adapté aux scènes complexes 
+        \begin{itemize}
+            \item Sources non ponctuelles 
+        \end{itemize}
+        \item Partitionnement des échanges lumineux
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Radiosité : inconvénients}
+    \begin{itemize}
+        \item Modèle diffus pur 
+        \begin{itemize}
+            \item On peut enchaîner sur une phase de ray tracing 
+        \end{itemize}
+        \item Coût mémoire
+        \item Calcul et stockage des facteurs de forme 
+        \item Résultats très liés au maillage 
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Accélération : radiosité hiérarchique}
+    \begin{center}
+        \includegraphics[width=.9\textwidth]{figs/radiosite-hierarchique.pdf}
+\end{center}
+\end{frame}
+
+\begin{frame}{Améliorations du rendu : maillage des discontinuités}
+    \begin{center}
+        \includegraphics[width=.9\textwidth]{figs/maillage-discontinuite.pdf}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Maillage des discontinuités : exemple (1/3)}
+\begin{center}
+    \includegraphics[width=.5\textwidth]{figs/md-1.pdf}
+\end{center}    
+\end{frame}
+
+\begin{frame}{Maillage des discontinuités : exemple (2/3)}
+    \begin{center}
+        \includegraphics[width=.5\textwidth]{figs/md-2.pdf}
+    \end{center}    
+    \end{frame}
+
+    \begin{frame}{Maillage des discontinuités : exemple (3/3)}
+        \begin{center}
+            \includegraphics[width=.5\textwidth]{figs/md-3.pdf}
+        \end{center}    
+        \end{frame}
+
+
+
+        
